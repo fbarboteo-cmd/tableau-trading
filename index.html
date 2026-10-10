@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Tableau de bord — Alertes Trading</title>
+<style>
+  :root{
+    --bg: #0e1520;
+    --surface: #16202c;
+    --surface-2: #1c2836;
+    --line: #2a3746;
+    --text: #e7edf3;
+    --muted: #7c8ba1;
+    --muted-2: #566578;
+    --buy: #2fbf71;
+    --buy-dim: #1c7a48;
+    --short: #e5484d;
+    --short-dim: #9c3236;
+    --accent: #e8b64c;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 18px 16px 40px;
+    min-height:100vh;
+    line-height:1.4;
+  }
+  .num{
+    font-family: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  header{ margin-bottom: 16px; }
+  header h1{ font-size: 19px; font-weight: 650; margin: 0 0 3px; letter-spacing: -0.01em; }
+  header p{ margin:0; font-size: 12.5px; color: var(--muted); }
+
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card h2{
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 600; margin: 0 0 12px;
+  }
+
+  .field{ margin-bottom: 12px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+  .input-row{
+    display:flex; align-items:center; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 10px; padding: 2px 12px;
+  }
+  .input-row input, .input-row select{
+    flex:1; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 15px; padding: 10px 0; width: 100%; font-family: inherit;
+  }
+  .input-row select{ appearance:none; }
+  .checkbox-row{ display:flex; align-items:center; gap:8px; padding: 6px 0; }
+  .checkbox-row input{ width:18px; height:18px; }
+  .checkbox-row label{ margin:0; font-size:13.5px; color: var(--text); }
+
+  button.btn{
+    border:none; border-radius: 10px; padding: 12px 16px; font-size: 14px;
+    font-weight: 650; font-family: inherit; cursor:pointer; width:100%;
+  }
+  .btn-primary{ background: var(--buy); color: #072b16; }
+  .btn-secondary{ background: var(--surface-2); color: var(--text); border: 1px solid var(--line); }
+  .btn-danger{ background: transparent; color: var(--short); border: 1px solid rgba(229,72,77,0.4); padding: 8px 12px; font-size:12.5px; width:auto; }
+  .btn-row{ display:flex; gap:8px; margin-top: 10px; }
+  .btn-row .btn-secondary{ flex:1; }
+  .btn-row .btn-primary{ flex:1; }
+
+  .banner{
+    border-radius: 12px; padding: 12px 14px; font-size: 12.5px; margin-bottom: 14px; line-height:1.45;
+  }
+  .banner.ok{ background: rgba(47,191,113,0.09); border: 1px solid rgba(47,191,113,0.3); color: #b7ecce; }
+  .banner.warn{ background: rgba(232,182,76,0.1); border: 1px solid rgba(232,182,76,0.35); color: #f3d896; }
+  .banner.bad{ background: rgba(229,72,77,0.1); border: 1px solid rgba(229,72,77,0.4); color: #fbc2c4; }
+  .banner strong{ display:block; margin-bottom:2px; }
+
+  .titre-item{
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px;
+  }
+  .titre-item.inactif{ opacity: 0.5; }
+  .titre-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .titre-nom{ font-size: 14.5px; font-weight: 650; }
+  .titre-ticker{ font-size: 11.5px; color: var(--muted); margin-top:1px; }
+  .titre-niveaux{ font-size: 11.5px; color: var(--muted); margin-top: 6px; display:flex; gap:14px; }
+  .titre-actions{ display:flex; gap:6px; margin-top: 10px; }
+  .toggle-pill{
+    font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+    border: 1px solid; white-space:nowrap;
+  }
+  .toggle-pill.on{ color: var(--buy); border-color: var(--buy-dim); background: rgba(47,191,113,0.08); }
+  .toggle-pill.off{ color: var(--muted); border-color: var(--line); background: transparent; }
+
+  details.ref summary{ font-size: 12.5px; color: var(--muted); cursor:pointer; padding: 4px 0; }
+  .ref-table{ width:100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+  .ref-table td{ padding: 5px 4px; border-bottom: 1px solid var(--line); }
+  .ref-table td:first-child{ color: var(--text); }
+  .ref-table td:last-child{ color: var(--accent); text-align:right; font-family: monospace; }
+
+  .empty-state{ text-align:center; padding: 20px 10px; color: var(--muted); font-size: 13px; }
+  footer{ text-align:center; color: var(--muted-2); font-size: 10.5px; margin-top: 22px; padding: 0 10px; line-height:1.5; }
+  .spinner{
+    display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.25);
+    border-top-color: var(--text); border-radius:50%; animation: spin 0.7s linear infinite; vertical-align:middle; margin-right:6px;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tableau de bord — Alertes Trading</h1>
+  <p>Gérer les titres surveillés directement sur GitHub</p>
+</header>
+
+<!-- CONNEXION -->
+<div class="card" id="cardConnexion">
+  <h2>Connexion au dépôt GitHub</h2>
+  <div class="field">
+    <label>Propriétaire / Dépôt</label>
+    <div class="input-row">
+      <input type="text" id="repoPath" value="" placeholder="utilisateur/depot" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+  </div>
+  <div class="field">
+    <label>Token d'accès personnel (GitHub)</label>
+    <div class="input-row">
+      <input type="password" id="pat" placeholder="ghp_... ou github_pat_...">
+    </div>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" id="fRemember">
+    <label for="fRemember">Se souvenir de ce token sur cet appareil</label>
+  </div>
+  <button class="btn btn-primary" id="btnConnect">Se connecter</button>
+  <button class="btn btn-secondary" id="btnForget" style="margin-top:8px; display:none;">Oublier le token enregistré</button>
+  <details class="ref" style="margin-top:10px;">
+    <summary>Comment obtenir ce token ?</summary>
+    <div style="font-size:12px; color:var(--muted); margin-top:8px; line-height:1.6;">
+      Sur GitHub : Settings (de votre compte, pas du dépôt) → Developer settings →
+      Fine-grained tokens → Generate new token. Limitez-le à votre dépôt d'alertes uniquement,
+      avec la permission <b>Contents: Read and write</b>. Sans la case « Se souvenir », le token
+      reste en mémoire le temps de la session seulement ; avec la case, il est gardé dans ce
+      navigateur jusqu'à ce que vous appuyiez sur « Oublier ».
+    </div>
+  </details>
+</div>
+
+<div id="banner"></div>
+
+<!-- LISTE DES TITRES -->
+<div class="card" id="cardListe" style="display:none;">
+  <h2>Titres surveillés</h2>
+  <div id="listeTitres"><div class="empty-state">Connectez-vous pour charger la liste.</div></div>
+</div>
+
+<!-- AJOUT / EDITION -->
+<div class="card" id="cardForm" style="display:none;">
+  <h2 id="formTitle">Ajouter un titre</h2>
+
+  <div class="field">
+    <label>Nom affiché</label>
+    <div class="input-row"><input type="text" id="fNom" placeholder="ex. Apple"></div>
+  </div>
+  <div class="field">
+    <label>Ticker Yahoo Finance</label>
+    <div class="input-row"><input type="text" id="fTicker" placeholder="ex. AAPL"></div>
+  </div>
+  <div class="field">
+    <label>Support (optionnel)</label>
+    <div class="input-row"><input type="number" id="fSupport" step="0.01" placeholder="ex. 14000"></div>
+  </div>
+  <div class="field">
+    <label>Résistance (optionnel)</label>
+    <div class="input-row"><input type="number" id="fResistance" step="0.01" placeholder="ex. 15200"></div>
+  </div>
+  <div class="checkbox-row">
+    <input type="checkbox" id="fActif" checked>
+    <label for="fActif">Surveillance active (RSI/MACD/ATR...)</label>
+  </div>
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="fRappelActif">
+    <label for="fRappelActif">Rappel hebdomadaire (Stop Loss à ajuster)</label>
+  </div>
+  <div class="field" id="blockRappelMessage" style="display:none;">
+    <label>Message du rappel</label>
+    <div class="input-row">
+      <input type="text" id="fRappelMessage" placeholder="ex. Vérifier si le Stop Loss doit être remonté">
+    </div>
+  </div>
+
+  <details class="ref" style="margin-top:10px;">
+    <summary>Tickers courants</summary>
+    <table class="ref-table">
+      <tr><td>Indice Suisse (SMI)</td><td>^SSMI</td></tr>
+      <tr><td>CAC 40</td><td>^FCHI</td></tr>
+      <tr><td>S&amp;P 500</td><td>^GSPC</td></tr>
+      <tr><td>Bitcoin</td><td>BTC-USD</td></tr>
+      <tr><td>EUR/USD</td><td>EURUSD=X</td></tr>
+      <tr><td>Or</td><td>GC=F</td></tr>
+    </table>
+  </details>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" id="btnCancelForm">Annuler</button>
+    <button class="btn btn-primary" id="btnSaveForm">Ajouter à la liste</button>
+  </div>
+</div>
+
+<!-- SAUVEGARDE -->
+<div class="card" id="cardSave" style="display:none;">
+  <div id="saveBanner"></div>
+  <button class="btn btn-primary" id="btnCommit">Enregistrer sur GitHub</button>
+  <button class="btn btn-secondary" id="btnAddNew" style="margin-top:8px;">+ Ajouter un nouveau titre</button>
+</div>
+
+<footer>
+  Ce tableau de bord modifie directement config.json dans votre dépôt via l'API GitHub.
+  Le token reste en mémoire pour la session, sauf si vous choisissez de le sauvegarder sur cet appareil.
+</footer>
+
+<script>
+  const $ = id => document.getElementById(id);
+  let config = null;
+  let sha = null;
+  let repoOwner = "", repoName = "";
+  let editingIndex = null;
+
+  function showBanner(type, title, msg, target='banner'){
+    $(target).innerHTML = `<div class="banner ${type}"><strong>${title}</strong>${msg||''}</div>`;
+    if(target === 'saveBanner') $(target).style.marginBottom = '12px';
+  }
+  function clearBanner(){ $('banner').innerHTML = ''; $('saveBanner').innerHTML = ''; $('saveBanner').style.marginBottom = '0'; }
+
+
+  async function githubFetch(path, options={}){
+    const token = $('pat').value.trim();
+    const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}${path}`, {
+      ...options,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/vnd.github+json",
+        ...(options.headers||{})
+      }
+    });
+    if(!res.ok){
+      const body = await res.text();
+      throw new Error(`${res.status} — ${body.slice(0,200)}`);
+    }
+    return res.json();
+  }
+
+  function b64ToUtf8(b64){
+    return decodeURIComponent(escape(atob(b64.replace(/\n/g,''))));
+  }
+  function utf8ToB64(str){
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  const STORAGE_KEY = 'alertes_trading_dashboard_credentials';
+
+  function loadSavedCredentials(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    } catch(e){ return null; }
+  }
+
+  function saveCredentials(repoPath, token){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ repoPath, token })); } catch(e){}
+  }
+
+  function forgetCredentials(){
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    $('pat').value = '';
+    $('fRemember').checked = false;
+    $('btnForget').style.display = 'none';
+    showBanner('ok', 'Token oublié', 'Il a été supprimé de cet appareil. Vous devrez le ressaisir la prochaine fois.');
+  }
+
+  async function connect(){
+    clearBanner();
+    const repoPath = $('repoPath').value.trim();
+    const [owner, name] = repoPath.split('/');
+    if(!owner || !name){
+      showBanner('bad', 'Format invalide', 'Utilisez le format utilisateur/depot.');
+      return;
+    }
+    repoOwner = owner; repoName = name;
+
+    $('btnConnect').innerHTML = '<span class="spinner"></span>Connexion...';
+    try {
+      const data = await githubFetch('/contents/config.json');
+      sha = data.sha;
+      config = JSON.parse(b64ToUtf8(data.content));
+
+      if($('fRemember').checked){
+        saveCredentials(repoPath, $('pat').value.trim());
+        $('btnForget').style.display = '';
+      }
+
+      showBanner('ok', 'Connecté', `config.json chargé — ${config.titres.length} titre(s) trouvé(s).`);
+      $('cardListe').style.display = '';
+      $('cardSave').style.display = '';
+      renderListe();
+    } catch(e){
+      showBanner('bad', 'Échec de connexion', 'Vérifiez le token et le nom du dépôt. Détail : ' + e.message);
+    } finally {
+      $('btnConnect').textContent = 'Se connecter';
+    }
+  }
+
+  $('btnConnect').addEventListener('click', connect);
+  $('btnForget').addEventListener('click', forgetCredentials);
+
+  // Au chargement : pré-remplir si un token a été sauvegardé, sans connexion automatique
+  // (le script est en fin de page, le DOM est déjà prêt — appel direct plutôt qu'un listener DOMContentLoaded)
+  (function initFromStorage(){
+    const saved = loadSavedCredentials();
+    if(saved){
+      $('repoPath').value = saved.repoPath;
+      $('pat').value = saved.token;
+      $('fRemember').checked = true;
+      $('btnForget').style.display = '';
+      showBanner('ok', 'Token retrouvé', 'Un token enregistré sur cet appareil a été rechargé — appuyez sur "Se connecter" pour continuer.');
+    }
+  })();
+
+  function renderListe(){
+    const container = $('listeTitres');
+    if(!config.titres.length){
+      container.innerHTML = '<div class="empty-state">Aucun titre pour l\'instant.</div>';
+      return;
+    }
+    container.innerHTML = '';
+    config.titres.forEach((t, i) => {
+      const div = document.createElement('div');
+      div.className = 'titre-item' + (t.actif ? '' : ' inactif');
+      div.innerHTML = `
+        <div class="titre-top">
+          <div>
+            <div class="titre-nom">${t.nom}</div>
+            <div class="titre-ticker num">${t.ticker_yahoo}</div>
+          </div>
+          <span class="toggle-pill ${t.actif ? 'on' : 'off'}">${t.actif ? 'ACTIF' : 'INACTIF'}</span>
+        </div>
+        <div class="titre-niveaux num">
+          ${t.support ? `Support: ${t.support}` : 'Support: —'} &nbsp;·&nbsp;
+          ${t.resistance ? `Résistance: ${t.resistance}` : 'Résistance: —'}
+        </div>
+        ${t.rappel_actif ? `<div class="titre-niveaux num"><span style="color:var(--accent);">🔔 Rappel hebdomadaire activé</span></div>` : ''}
+        <div class="titre-actions">
+          <button class="btn btn-secondary" data-action="toggle" data-i="${i}" style="width:auto; padding:8px 12px; font-size:12.5px;">
+            ${t.actif ? 'Désactiver' : 'Activer'}
+          </button>
+          <button class="btn btn-secondary" data-action="edit" data-i="${i}" style="width:auto; padding:8px 12px; font-size:12.5px;">Modifier</button>
+          <button class="btn btn-danger" data-action="delete" data-i="${i}">Supprimer</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    container.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.dataset.i);
+        const action = btn.dataset.action;
+        if(action === 'toggle'){
+          config.titres[i].actif = !config.titres[i].actif;
+          renderListe();
+        } else if(action === 'delete'){
+          if(confirm(`Supprimer "${config.titres[i].nom}" ?`)){
+            config.titres.splice(i, 1);
+            renderListe();
+          }
+        } else if(action === 'edit'){
+          openForm(i);
+        }
+      });
+    });
+  }
+
+  function openForm(index){
+    editingIndex = index;
+    const t = index !== null ? config.titres[index] : null;
+    $('formTitle').textContent = index !== null ? 'Modifier le titre' : 'Ajouter un titre';
+    $('fNom').value = t ? t.nom : '';
+    $('fTicker').value = t ? t.ticker_yahoo : '';
+    $('fSupport').value = t && t.support ? t.support : '';
+    $('fResistance').value = t && t.resistance ? t.resistance : '';
+    $('fActif').checked = t ? t.actif : true;
+    $('fRappelActif').checked = t ? !!t.rappel_actif : false;
+    $('fRappelMessage').value = t && t.rappel_message ? t.rappel_message : '';
+    $('blockRappelMessage').style.display = $('fRappelActif').checked ? '' : 'none';
+    $('cardForm').style.display = '';
+    $('cardForm').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  $('fRappelActif').addEventListener('change', () => {
+    $('blockRappelMessage').style.display = $('fRappelActif').checked ? '' : 'none';
+  });
+
+  $('btnAddNew').addEventListener('click', () => openForm(null));
+  $('btnCancelForm').addEventListener('click', () => { $('cardForm').style.display = 'none'; });
+
+  $('btnSaveForm').addEventListener('click', () => {
+    const nom = $('fNom').value.trim();
+    const ticker = $('fTicker').value.trim();
+    if(!nom || !ticker){
+      showBanner('warn', 'Champs manquants', 'Le nom et le ticker Yahoo Finance sont obligatoires.');
+      return;
+    }
+    const entry = {
+      nom,
+      ticker_yahoo: ticker,
+      support: $('fSupport').value ? parseFloat($('fSupport').value) : null,
+      resistance: $('fResistance').value ? parseFloat($('fResistance').value) : null,
+      actif: $('fActif').checked,
+      rappel_actif: $('fRappelActif').checked,
+      rappel_message: $('fRappelMessage').value.trim()
+    };
+    if(editingIndex !== null){
+      config.titres[editingIndex] = entry;
+    } else {
+      config.titres.push(entry);
+    }
+    $('cardForm').style.display = 'none';
+    clearBanner();
+    renderListe();
+  });
+
+  $('btnCommit').addEventListener('click', async () => {
+    clearBanner();
+    $('btnCommit').innerHTML = '<span class="spinner"></span>Enregistrement...';
+    try {
+      const newContent = JSON.stringify(config, null, 2);
+      const res = await githubFetch('/contents/config.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'Mise à jour des titres surveillés (tableau de bord)',
+          content: utf8ToB64(newContent),
+          sha: sha
+        })
+      });
+      sha = res.content.sha;
+      showBanner('ok', 'Enregistré', 'config.json a été mis à jour sur GitHub. Le prochain passage du workflow prendra en compte ces changements.', 'saveBanner');
+    } catch(e){
+      showBanner('bad', 'Échec de l\'enregistrement', e.message, 'saveBanner');
+    } finally {
+      $('btnCommit').textContent = 'Enregistrer sur GitHub';
+    }
+  });
+</script>
+
+</body>
+</html>
