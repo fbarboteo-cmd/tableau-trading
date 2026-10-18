@@ -287,6 +287,20 @@
     text-align: center; font-variant-numeric: tabular-nums;
   }
   .targets-edit-row span.sep { color: var(--muted); }
+  .import-card textarea {
+    width: 100%; min-height: 70px; resize: vertical;
+    background: var(--panel-raised); border: 1px solid var(--line);
+    color: var(--ink); border-radius: 7px; padding: 8px 10px;
+    font-size: 12px; font-family: ui-monospace, Menlo, monospace;
+  }
+  .import-card .btn-import {
+    margin-top: 8px; width: 100%;
+    background: var(--brass); color: var(--bg); border: none;
+    border-radius: 8px; padding: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  }
+  .import-msg { font-size: 12px; margin-top: 7px; color: var(--muted); }
+  .import-msg.ok { color: var(--ok); }
+  .import-msg.bad { color: var(--bad); }
 </style>
 </head>
 <body>
@@ -345,6 +359,20 @@
         <input type="number" id="simAmount" placeholder="Montant $" step="0.01" inputmode="decimal">
       </div>
       <div class="sim-result" id="simResult">Choisissez une catégorie et un montant pour voir l'impact sur votre répartition.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div>
+        <h2>Importer depuis Claude</h2>
+        <div class="section-sub">Collez le code donné par Claude : il remplace le total et la liste des titres (les fourchettes cibles restent les vôtres)</div>
+      </div>
+    </div>
+    <div class="sim-card import-card">
+      <textarea id="importText" placeholder='{"total": 2116.2, "holdings": [...]}' spellcheck="false"></textarea>
+      <button class="btn-import" id="importBtn">Importer</button>
+      <div class="import-msg" id="importMsg"></div>
     </div>
   </section>
 
@@ -618,6 +646,38 @@
     renderGauges();
     simAmount.value = '';
     renderSim();
+  });
+
+  // ---------- Import (code fourni par Claude, rien n'est envoyé sur Internet) ----------
+  var importMsg = document.getElementById('importMsg');
+  document.getElementById('importBtn').addEventListener('click', function () {
+    var data;
+    try { data = JSON.parse(document.getElementById('importText').value); }
+    catch (e) { importMsg.className = 'import-msg bad'; importMsg.textContent = 'Code illisible : vérifiez qu\'il a été copié en entier.'; return; }
+    var ids = state.categories.map(function (c) { return c.id; });
+    if (!data || !Array.isArray(data.holdings)) {
+      importMsg.className = 'import-msg bad'; importMsg.textContent = 'Code invalide : liste de titres manquante.'; return;
+    }
+    var holdings = [];
+    for (var i = 0; i < data.holdings.length; i++) {
+      var h = data.holdings[i];
+      if (!h || ids.indexOf(h.category) < 0 || !isFinite(parseFloat(h.amount))) {
+        importMsg.className = 'import-msg bad';
+        importMsg.textContent = 'Ligne ' + (i + 1) + ' invalide (catégorie ou montant).'; return;
+      }
+      holdings.push({ id: uid(), name: String(h.name || ''), category: h.category, amount: parseFloat(h.amount) });
+    }
+    if (!confirm('Remplacer les ' + state.holdings.length + ' titre(s) actuels par les ' + holdings.length + ' importés ?')) return;
+    state.holdings = holdings;
+    state.total = parseFloat(data.total) || 0;
+    saveState();
+    totalInput.value = state.total || '';
+    refreshTotalDisplay();
+    renderHoldings();
+    renderSim();
+    document.getElementById('importText').value = '';
+    importMsg.className = 'import-msg ok';
+    importMsg.textContent = holdings.length + ' titres importés.';
   });
 
   // ---------- Init ----------
