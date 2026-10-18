@@ -306,7 +306,7 @@
       <input type="number" id="totalInput" placeholder="ex. 1480.00" step="0.01" inputmode="decimal">
     </div>
     <div class="hint">Saisissez la valeur totale actuelle de votre portefeuille (visible en haut de l'onglet Portefeuille sur eToro). Les pourcentages ci-dessous s'y recalculent automatiquement.</div>
-    <div class="hint reminder">📌 Pense-bête : modifier le solde disponible (cash non investi) de la ligne « Liquidités » ci-dessous — sinon les pourcentages des autres catégories sont faussés.</div>
+    <div class="hint reminder">📌 Pense-bête : modifier le solde disponible (cash non investi) de la ligne « Réserve » ci-dessous, et y classer IB01.L (quasi-cash) — sinon les pourcentages des autres catégories sont faussés.</div>
   </div>
 
   <section>
@@ -358,10 +358,10 @@
 
   var DEFAULT_CATEGORIES = [
     { id: 'actions',     name: 'Actions & ETF actions', min: 55, max: 65 },
-    { id: 'obligations', name: 'Obligations',            min: 15, max: 20 },
+    { id: 'obligations', name: 'Obligations (EUNA.DE)',  min: 10, max: 15 },
     { id: 'or',          name: 'Or / matières premières', min: 5,  max: 10 },
     { id: 'crypto',      name: 'Crypto',                  min: 0,  max: 5  },
-    { id: 'cash',        name: 'Liquidités',               min: 5,  max: 10 }
+    { id: 'cash',        name: 'Réserve (cash + IB01.L)', min: 10, max: 20 }
   ];
 
   var state = loadState();
